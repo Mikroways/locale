@@ -17,43 +17,43 @@
 # limitations under the License.
 #
 
-lang = node[:locale][:lang]
-lc_all = node[:locale][:lc_all] || lang
+lang = node['locale']['lang']
+lc_all = node['locale']['lc_all'] || lang
 
 case node['platform_family']
 when 'debian'
 
-  package "locales" do
+  package 'locales' do
     action :install
   end
 
-  execute "Generate locale" do
+  execute 'Generate locale' do
     command "locale-gen #{lang}"
-    not_if { Locale.up_to_date?("/etc/default/locale", lang, lc_all) }
+    not_if { Locale.up_to_date?('/etc/default/locale', lang, lc_all) }
   end
 
-  execute "Update locale" do
+  execute 'Update locale' do
     command "update-locale LANG=#{lang} LC_ALL=#{lc_all}"
-    not_if { Locale.up_to_date?("/etc/default/locale", lang, lc_all) }
+    not_if { Locale.up_to_date?('/etc/default/locale', lang, lc_all) }
   end
 
 when 'rhel'
   if node['platform_version'].to_f >= 7.0
     bash 'Update locale' do
-        user 'root'
-        code "/usr/bin/localectl --no-ask-password set-locale LANG=#{node[:locale][:lang]}"
-        not_if { Locale.up_to_date?('/etc/locale.conf', lang, nil) }
+      user 'root'
+      code "/usr/bin/localectl --no-ask-password set-locale LANG=#{node['locale']['lang']}"
+      not_if { Locale.up_to_date?('/etc/locale.conf', lang, nil) }
     end
   else
-    locale_file_path = "/etc/sysconfig/i18n"
+    locale_file_path = '/etc/sysconfig/i18n'
 
     file locale_file_path do
       content lazy {
         locale = IO.read(locale_file_path)
-        variables = Hash[locale.lines.map { |line| line.strip.split("=") }]
-        variables["LANG"] = lang
-        variables["LC_ALL"] = lc_all
-        variables.map { |pairs| pairs.join("=") }.join("\n") + "\n"
+        variables = Hash[locale.lines.map { |line| line.strip.split('=') }]
+        variables['LANG'] = lang
+        variables['LC_ALL'] = lc_all
+        variables.map { |pairs| pairs.join('=') }.join("\n") + "\n"
       }
       not_if { Locale.up_to_date?(locale_file_path, lang, lc_all) }
     end
