@@ -27,9 +27,21 @@ when 'debian'
     action :install
   end
 
-  execute 'Generate locale' do
-    command "locale-gen #{lang}"
-    not_if { Locale.up_to_date?('/etc/default/locale', lang, lc_all) }
+  if node['platform'] == 'debian'
+    execute 'locale-gen' do
+      command 'locale-gen'
+      action :nothing
+    end
+
+    file '/etc/locale.gen' do
+      content "#{lang} #{lang.split('.').last}\n"
+      notifies :run, 'execute[locale-gen]', :immediately
+    end
+  else
+    execute 'Generate locale' do
+      command "locale-gen #{lang}"
+      not_if { Locale.up_to_date?('/etc/default/locale', lang, lc_all) }
+    end
   end
 
   execute 'Update locale' do
